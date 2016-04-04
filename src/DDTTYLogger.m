@@ -47,10 +47,9 @@ static DDTTYLogger *__sharedInstance = nil;;
 	isaTTY = isatty(STDERR_FILENO);
 
 	if (isaTTY) {
-		_dateFormat = @"%Y-%m-%d %H:%M:%S";
 
 		self.app = [[OFProcessInfo processInfo] processName];
-		self.pid = @([[OFProcessInfo processInfo] processId]);
+		self.pid = [OFNumber numberWithUInt32:[[OFProcessInfo processInfo] processId]];
 	}
 	
 	return self;
@@ -71,7 +70,7 @@ static DDTTYLogger *__sharedInstance = nil;;
 		{
 
 			// Here is our format: "%@ %@[%@:%@] %@", timestamp, appName, processID, threadID, logMsg
-			OFString* consoleMessage = [OFString stringWithFormat:@"%04d-%02d-%02d %02d:%02d:%02d.%03d %@[%d:%@]: %@", //solve problem falldown with GCD
+			OFString* consoleMessage = [OFString stringWithFormat:@"%04d-%02d-%02d %02d:%02d:%02d.%03d %@[%@:%@]: %@", //solve problem falldown with GCD
 																			logMessage.timestamp.localYear, 
 																			logMessage.timestamp.localMonthOfYear, 
 																			logMessage.timestamp.localDayOfMonth,

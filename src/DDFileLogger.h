@@ -118,7 +118,7 @@
 
 @interface DDLogFileFormatterDefault : OFObject <DDLogFormatter>
 {
-	OFConstantString *_dateFormat;
+
 }
 
 @end
@@ -138,6 +138,8 @@
 	OFTimer *rollingTimer;
 	
 	uint64_t _maximumFileSize;
+	size_t _currentBufferSize;
+	of_time_interval_t _lastBufferFlush;
 	of_time_interval_t _rollingFrequency;
 }
 

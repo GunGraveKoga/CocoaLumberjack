@@ -10,8 +10,6 @@
 {
 	bool isaTTY;
 	
-	OFConstantString* _dateFormat;
-	
 	OFString *_app; // Not null terminated
 	OFNumber *_pid; // Not null terminated
 	

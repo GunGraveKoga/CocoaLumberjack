@@ -230,18 +230,18 @@
 		const of_unichar_t* chars = [@("0123456789ABCDEF") characters];
 		
 		OFString *hex = [fileName substringWithRange:of_range(4, 6)];
-		size_t sHexCalculated = 0;
+		size_t szHexCalculated = 0;
 
 		for (size_t idx = 0; idx < [hex length]; ++idx) {
 			for (size_t char_idx = 0; char_idx < 16; ++char_idx) {
 				if (chars[char_idx] == [hex characterAtIndex:idx]) {
-					sHexCalculated++;
+					szHexCalculated++;
 					break;
 				}
 			}
 		}
 
-		if (sHexCalculated == [hex length]) {
+		if (szHexCalculated == [hex length]) {
 			//objc_autoreleasePoolPop(pool);
 			return true;
 		}
@@ -431,7 +431,6 @@
 {
 	self = [super init];
 	
-	_dateFormat = @"%Y-%m-%d %H:%M:%S";
 	
 	return self;
 }
@@ -488,6 +487,9 @@
 	_logFileManager = [aLogFileManager retain];
 		
 	formatter = [[DDLogFileFormatterDefault alloc] init];
+
+	_currentBufferSize = 0;
+	_lastBufferFlush = 0.0;
 	/*
 	NSKeyValueObservingOptions kvoOptions = NSKeyValueObservingOptionOld | NSKeyValueObservingOptionNew;
 		
@@ -650,14 +652,28 @@
 
 - (void)maybeRollLogFileDueToSize
 {
-	
-	if ([currentLogFileHandle isWriteBuffered])
+	static size_t one_meg = (1024 * 1024 * 1);
+	bool shouldFlushBuffer = false;
+	of_time_interval_t current_timestamp = [[OFDate date] timeIntervalSince1970];
+
+	if (_currentBufferSize >= one_meg)
+		shouldFlushBuffer = true;
+	else if (_currentBufferSize >= self.maximumFileSize)
+		shouldFlushBuffer = true;
+	else if (_currentBufferSize >= self.maximumFileSize / 3)
+		shouldFlushBuffer = true;
+	else if ((current_timestamp - _lastBufferFlush) >= 3.0)
+		shouldFlushBuffer = true;
+
+	if (shouldFlushBuffer) {
 		[currentLogFileHandle flushWriteBuffer];
+		_lastBufferFlush = current_timestamp;
+		_currentBufferSize = 0;
+	}
 
-
-	uint64_t sFileSize = (uint64_t)[[OFFileManager defaultManager] sizeOfFileAtPath:[[self currentLogFileInfo] filePath]];
+	uint64_t szFileSize = (uint64_t)[currentLogFileHandle seekToOffset:0 whence:SEEK_CUR];
 	
-	if (sFileSize >= self.maximumFileSize)
+	if (szFileSize >= self.maximumFileSize)
 	{
 		NSLogVerbose(@"DDFileLogger: Rolling log file due to size...");
 		
@@ -743,6 +759,7 @@
 		OFString *logFilePath = [[self currentLogFileInfo] filePath];
 		
 		currentLogFileHandle = [[OFFile fileWithPath:logFilePath mode:@("a+")] retain];
+		[currentLogFileHandle setWriteBuffered:true];
 		[currentLogFileHandle seekToOffset:0 whence:SEEK_END];
 		
 		if (currentLogFileHandle)
@@ -775,6 +792,8 @@
 		}
 		
 		[[self currentLogFileHandle] writeString:logMsg];
+
+		_currentBufferSize += [logMsg UTF8StringLength];
 		
 		[self maybeRollLogFileDueToSize];
 	}
