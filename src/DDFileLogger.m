@@ -788,11 +788,14 @@
 	{
 		if (![logMsg hasSuffix:@"\n"])
 		{
-			logMsg = [logMsg stringByAppendingString:@"\n"];
+			[[self currentLogFileHandle] writeLine:logMsg];
+			_currentBufferSize += 1;
+
+		} else {
+			[[self currentLogFileHandle] writeString:logMsg];
+
 		}
 		
-		[[self currentLogFileHandle] writeString:logMsg];
-
 		_currentBufferSize += [logMsg UTF8StringLength];
 		
 		[self maybeRollLogFileDueToSize];
